@@ -1,0 +1,12 @@
+{
+    "scheduled_times": ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"],
+    "primary_url": "https://18313.live.streamtheworld.com/CHQMFM_ADP/HLS/playlist.m3u8",
+    "fallback_url": "https://25083.live.streamtheworld.com/CHQMFM_ADP/HLS/playlist.m3u8",
+    "full_duration_seconds": 600,
+    "ffmpeg_path": "/usr/bin/ffmpeg",
+    "min_retry_duration": 10,
+    "email_sender": "sender@example.com",
+    "email_recipients": ["recipient1@example.com", "recipient2@example.com"],
+    "email_subject": "New Keyword",
+    "email_content": "A new keyword is available."
+}

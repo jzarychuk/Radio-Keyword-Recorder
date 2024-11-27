@@ -4,15 +4,66 @@ from datetime import datetime, timedelta
 import subprocess
 import sys
 import os
+import json
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+import base64
 
 
-SCHEDULED_TIMES = ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"]
-PRIMARY_URL = "https://18313.live.streamtheworld.com/CHQMFM_ADP/HLS/playlist.m3u8"
-FALLBACK_URL = "https://25083.live.streamtheworld.com/CHQMFM_ADP/HLS/playlist.m3u8"
-FULL_DURATION_SECONDS = 600
+def load_config(file_path):
+    with open(file_path, 'r') as file:
+        return json.load(file)
+
+
+# Load constants globally
+config = load_config("config.json")
+SCHEDULED_TIMES = config["scheduled_times"]
+PRIMARY_URL = config["primary_url"]
+FALLBACK_URL = config["fallback_url"]
+FULL_DURATION_SECONDS = config["full_duration_seconds"]
 FULL_DURATION_MINUTES = FULL_DURATION_SECONDS // 60
-FFMPEG_PATH = "/usr/bin/ffmpeg"
-MIN_RETRY_DURATION = 10
+FFMPEG_PATH = config["ffmpeg_path"]
+MIN_RETRY_DURATION = config["min_retry_duration"]
+EMAIL_SENDER = config["email_sender"]
+EMAIL_RECIPIENTS = config["email_recipients"]
+EMAIL_SUBJECT = config["email_subject"]
+EMAIL_CONTENT = config["email_content"]
+
+
+def send_email(filename):
+
+    # Set the API key
+    api_key = os.environ.get("SENDGRID_API_KEY")
+
+    # Create the email message
+    message = Mail(
+        from_email=EMAIL_SENDER,
+        to_emails=EMAIL_RECIPIENTS,
+        subject=EMAIL_SUBJECT,
+        plain_text_content=EMAIL_CONTENT
+    )
+
+    # Read and encode the file in Base64
+    with open(filename, 'rb') as f:
+        file_data = base64.b64encode(f.read()).decode()
+
+    # Create the email attachment
+    attachment = Attachment(
+        FileContent(file_data),
+        FileName(filename),
+        FileType("audio/mpeg"),
+        Disposition("attachment")
+    )
+
+    # Add the attachment to the email
+    message.add_attachment(attachment)
+
+    # Send the email
+    try:
+        SendGridAPIClient(api_key).send(message)
+        print(f"Email sent to recipients: {EMAIL_RECIPIENTS}")
+    except Exception as e:
+        print(f"Error sending email: {e}", file=sys.stderr)
 
 
 def record_for_duration(url, duration, attempt_type):
@@ -31,6 +82,8 @@ def record_for_duration(url, duration, attempt_type):
         subprocess.run(command, check=True, stdout=devnull, stderr=devnull)
 
     print(f"{attempt_type.capitalize()} recording completed: {filename}")
+
+    send_email(filename)
 
 
 def retry_recording(remaining_time):
