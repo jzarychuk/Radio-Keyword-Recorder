@@ -1,0 +1,7 @@
+[project]
+name = "Radio-Keyword-Recorder"
+version = "1.0.0"
+dependencies = [
+  "schedule",
+  "sendgrid",
+]
